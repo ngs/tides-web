@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Box, useMediaQuery } from '@mui/material';
-import { addDays } from 'date-fns';
-import { Map } from './components/Map';
-import { TideGraph } from './components/TideGraph';
-import { TideOverlay } from './components/TideOverlay';
-import { useDebounce } from './hooks/useDebounce';
-import { useUrlState } from './hooks/useUrlState';
-import { fetchTidePredictions } from './services/tidesApi';
-import type { MapPosition, TidePrediction } from './types';
+import { useState, useEffect } from "react";
+import {
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
+  Box,
+  useMediaQuery,
+} from "@mui/material";
+import { addDays } from "date-fns";
+import { Map } from "./components/Map";
+import { TideGraph } from "./components/TideGraph";
+import { TideOverlay } from "./components/TideOverlay";
+import { useDebounce } from "./hooks/useDebounce";
+import { useUrlState } from "./hooks/useUrlState";
+import { fetchTidePredictions } from "./services/tidesApi";
+import type { MapPosition, TidePrediction } from "./types";
 
 // Default map position (Tokyo Bay area)
 const DEFAULT_POSITION: MapPosition = {
@@ -25,9 +31,9 @@ const mapPositionUrlOptions = {
     zoom: pos.zoom.toString(),
   }),
   deserialize: (params: URLSearchParams) => {
-    const lat = params.get('lat');
-    const lon = params.get('lon');
-    const zoom = params.get('zoom');
+    const lat = params.get("lat");
+    const lon = params.get("lon");
+    const zoom = params.get("zoom");
 
     if (!lat || !lon) return DEFAULT_POSITION;
 
@@ -40,11 +46,11 @@ const mapPositionUrlOptions = {
 };
 
 function App() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
 
   const theme = createTheme({
     palette: {
-      mode: prefersDarkMode ? 'dark' : 'light',
+      mode: prefersDarkMode ? "dark" : "light",
     },
   });
 
@@ -59,7 +65,12 @@ function App() {
   // Fetch tide predictions when debounced position or selected date changes
   useEffect(() => {
     const fetchData = async () => {
-      console.log('Fetching tide predictions for:', debouncedPosition, 'date:', selectedDate);
+      console.log(
+        "Fetching tide predictions for:",
+        debouncedPosition,
+        "date:",
+        selectedDate,
+      );
       setLoading(true);
       setError(null);
 
@@ -73,16 +84,18 @@ function App() {
           debouncedPosition.lon,
           start,
           end,
-          '30m',
-          'fes',
+          "30m",
+          "fes",
         );
 
-        console.log('Received predictions:', response.predictions.length);
+        console.log("Received predictions:", response.predictions.length);
         setPredictions(response.predictions);
       } catch (err) {
-        console.error('Error fetching tide predictions:', err);
+        console.error("Error fetching tide predictions:", err);
         setError(
-          err instanceof Error ? err.message : 'Failed to fetch tide predictions',
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch tide predictions",
         );
         setPredictions([]);
       } finally {
@@ -93,30 +106,30 @@ function App() {
     fetchData();
   }, [debouncedPosition, selectedDate]);
 
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box
         sx={{
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {/* Map container */}
         <Box
           sx={{
             flex: 1,
-            position: 'relative',
-            width: '100%',
+            position: "relative",
+            width: "100%",
             // On desktop, reduce width to make room for sidebar
             ...(isMobile
-              ? { height: '60vh' }
-              : { width: 'calc(100vw - 400px)', height: '100vh' }),
+              ? { height: "60vh" }
+              : { width: "calc(100vw - 400px)", height: "100vh" }),
           }}
         >
           <Map position={mapPosition} onPositionChange={setMapPosition} />

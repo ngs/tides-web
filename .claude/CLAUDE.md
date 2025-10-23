@@ -19,6 +19,7 @@ A Single Page Application (SPA) that displays tide predictions on an interactive
 ## Features
 
 ### Core Functionality
+
 1. **Interactive Map**: Google Maps integration with drag functionality
 2. **Tide Graph Display**:
    - Shows tide predictions from https://api.tides.ngs.io/
@@ -32,13 +33,14 @@ A Single Page Application (SPA) that displays tide predictions on an interactive
 Base URL: `https://api.tides.ngs.io/`
 
 Endpoints:
+
 - `GET /v1/tides/predictions?lat={lat}&lon={lon}&start={start}&end={end}&interval=30m&source=fes`
 - `GET /v1/constituents`
 - `GET /healthz`
 
 ## Project Structure
 
-```
+````
 tides-web/
 ├── src/
 │   ├── components/
@@ -85,7 +87,7 @@ npm run build
 
 # Preview production build
 npm run preview
-```
+````
 
 ## Environment Variables
 

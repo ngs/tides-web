@@ -1,19 +1,21 @@
-import { useEffect, useRef } from 'react';
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
-import { Box, CircularProgress, Alert } from '@mui/material';
-import type { MapPosition } from '../types';
+import { useEffect, useRef } from "react";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import { Box, CircularProgress, Alert } from "@mui/material";
+import type { MapPosition } from "../types";
 
 interface MapProps {
   position: MapPosition;
   onPositionChange: (position: MapPosition) => void;
 }
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 export function Map({ position, onPositionChange }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(
+    null,
+  );
   const isLoadingRef = useRef(false);
   const errorRef = useRef<string | null>(null);
   const isUpdatingFromPropsRef = useRef(false);
@@ -21,7 +23,7 @@ export function Map({ position, onPositionChange }: MapProps) {
   useEffect(() => {
     if (!mapRef.current || isLoadingRef.current) return;
     if (!GOOGLE_MAPS_API_KEY) {
-      errorRef.current = 'Google Maps API key not configured';
+      errorRef.current = "Google Maps API key not configured";
       return;
     }
 
@@ -30,50 +32,54 @@ export function Map({ position, onPositionChange }: MapProps) {
     const loadMap = async () => {
       try {
         // Configure the API
-        setOptions({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' });
+        setOptions({ key: GOOGLE_MAPS_API_KEY, v: "weekly" });
 
-        // Load the maps library
-        await importLibrary('maps');
+        // Load the maps and marker libraries
+        await importLibrary("maps");
+        const { AdvancedMarkerElement } = (await importLibrary(
+          "marker",
+        )) as google.maps.MarkerLibrary;
 
         if (!mapRef.current) return;
 
-        // Initialize map
+        // Initialize map with mapId for AdvancedMarkerElement
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: position.lat, lng: position.lon },
           zoom: position.zoom,
           mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: true,
+          mapId: "TIDES_MAP", // Required for AdvancedMarkerElement
         });
 
         googleMapRef.current = map;
 
-        // Add marker for selected location
-        const marker = new google.maps.Marker({
+        // Add marker for selected location using AdvancedMarkerElement
+        const marker = new AdvancedMarkerElement({
           position: { lat: position.lat, lng: position.lon },
           map,
-          draggable: true,
-          title: 'Tide location',
+          gmpDraggable: true,
+          title: "Tide location",
         });
 
         markerRef.current = marker;
 
         // Update position when marker is dragged
-        marker.addListener('dragend', () => {
-          const pos = marker.getPosition();
+        marker.addListener("dragend", () => {
+          const pos = marker.position as google.maps.LatLngLiteral;
           if (pos) {
             onPositionChange({
-              lat: pos.lat(),
-              lon: pos.lng(),
+              lat: pos.lat,
+              lon: pos.lng,
               zoom: map.getZoom() || position.zoom,
             });
           }
         });
 
         // Update position and marker when map is clicked
-        map.addListener('click', (e: google.maps.MapMouseEvent) => {
+        map.addListener("click", (e: google.maps.MapMouseEvent) => {
           if (e.latLng) {
-            marker.setPosition(e.latLng);
+            marker.position = e.latLng;
             onPositionChange({
               lat: e.latLng.lat(),
               lon: e.latLng.lng(),
@@ -83,7 +89,7 @@ export function Map({ position, onPositionChange }: MapProps) {
         });
 
         // Update zoom when map zoom changes (only from user interaction)
-        map.addListener('zoom_changed', () => {
+        map.addListener("zoom_changed", () => {
           if (isUpdatingFromPropsRef.current) return;
           const center = map.getCenter();
           if (center) {
@@ -96,7 +102,7 @@ export function Map({ position, onPositionChange }: MapProps) {
         });
 
         // Update when map is dragged (only from user interaction)
-        map.addListener('dragend', () => {
+        map.addListener("dragend", () => {
           if (isUpdatingFromPropsRef.current) return;
           const center = map.getCenter();
           if (center) {
@@ -108,13 +114,13 @@ export function Map({ position, onPositionChange }: MapProps) {
           }
         });
       } catch (error: unknown) {
-        console.error('Error loading Google Maps:', error);
-        errorRef.current = `Failed to load Google Maps: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        console.error("Error loading Google Maps:", error);
+        errorRef.current = `Failed to load Google Maps: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
     };
 
     loadMap();
-  }, []);
+  }, [onPositionChange, position.lat, position.lon, position.zoom]);
 
   // Update map position when prop changes
   useEffect(() => {
@@ -123,7 +129,7 @@ export function Map({ position, onPositionChange }: MapProps) {
       const newCenter = { lat: position.lat, lng: position.lon };
       googleMapRef.current.setCenter(newCenter);
       googleMapRef.current.setZoom(position.zoom);
-      markerRef.current.setPosition(newCenter);
+      markerRef.current.position = newCenter;
       // Reset flag after a short delay to allow map events to settle
       setTimeout(() => {
         isUpdatingFromPropsRef.current = false;
@@ -135,31 +141,32 @@ export function Map({ position, onPositionChange }: MapProps) {
     return (
       <Box
         sx={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           p: 2,
         }}
       >
         <Alert severity="error">
-          Google Maps API key is not configured. Please set VITE_GOOGLE_MAPS_API_KEY in your .env file.
+          Google Maps API key is not configured. Please set
+          VITE_GOOGLE_MAPS_API_KEY in your .env file.
         </Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+    <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
       {isLoadingRef.current && !googleMapRef.current && (
         <Box
           sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
           }}
         >
           <CircularProgress />

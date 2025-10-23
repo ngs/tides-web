@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 export interface UrlStateOptions<T> {
   defaultValue: T;
@@ -11,9 +11,13 @@ export interface UrlStateOptions<T> {
  * @param options - Configuration options for serialization/deserialization
  * @returns [state, setState] tuple similar to useState
  */
-export function useUrlState<T>({ defaultValue, serialize, deserialize }: UrlStateOptions<T>): [T, (value: T) => void] {
+export function useUrlState<T>({
+  defaultValue,
+  serialize,
+  deserialize,
+}: UrlStateOptions<T>): [T, (value: T) => void] {
   const [state, setState] = useState<T>(() => {
-    if (typeof window === 'undefined') return defaultValue;
+    if (typeof window === "undefined") return defaultValue;
 
     const params = new URLSearchParams(window.location.search);
     try {
@@ -25,7 +29,7 @@ export function useUrlState<T>({ defaultValue, serialize, deserialize }: UrlStat
 
   // Update URL when state changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
     const serialized = serialize(state);
@@ -40,7 +44,7 @@ export function useUrlState<T>({ defaultValue, serialize, deserialize }: UrlStat
     });
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newUrl);
+    window.history.replaceState({}, "", newUrl);
   }, [state, serialize]);
 
   // Listen for browser back/forward navigation
@@ -54,8 +58,8 @@ export function useUrlState<T>({ defaultValue, serialize, deserialize }: UrlStat
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [deserialize, defaultValue]);
 
   const updateState = useCallback((value: T) => {

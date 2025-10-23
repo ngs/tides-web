@@ -1,13 +1,14 @@
-import type { TidePredictionsResponse, Constituent } from '../types';
+import type { TidePredictionsResponse, Constituent } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_TIDES_API_URL || 'https://api.tides.ngs.io';
+const API_BASE_URL =
+  import.meta.env.VITE_TIDES_API_URL || "https://api.tides.ngs.io";
 
 export class TidesApiError extends Error {
   statusCode?: number;
 
   constructor(message: string, statusCode?: number) {
     super(message);
-    this.name = 'TidesApiError';
+    this.name = "TidesApiError";
     this.statusCode = statusCode;
   }
 }
@@ -20,8 +21,8 @@ export async function fetchTidePredictions(
   lon: number,
   start: Date,
   end: Date,
-  interval: string = '30m',
-  source: string = 'fes',
+  interval: string = "30m",
+  source: string = "fes",
 ): Promise<TidePredictionsResponse> {
   const params = new URLSearchParams({
     lat: lat.toString(),
@@ -52,7 +53,7 @@ export async function fetchTidePredictions(
       throw error;
     }
     throw new TidesApiError(
-      `Network error while fetching tide predictions: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Network error while fetching tide predictions: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -81,7 +82,7 @@ export async function fetchConstituents(): Promise<Constituent[]> {
       throw error;
     }
     throw new TidesApiError(
-      `Network error while fetching constituents: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Network error while fetching constituents: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }

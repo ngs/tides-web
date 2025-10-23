@@ -1,5 +1,5 @@
-import { Box, Drawer, Paper, useMediaQuery, useTheme } from '@mui/material';
-import type { ReactNode } from 'react';
+import { Box, Drawer, Paper, useMediaQuery, useTheme } from "@mui/material";
+import type { ReactNode } from "react";
 
 interface TideOverlayProps {
   children: ReactNode;
@@ -8,7 +8,7 @@ interface TideOverlayProps {
 
 export function TideOverlay({ children, open = true }: TideOverlayProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   if (isMobile) {
     // Mobile: Bottom drawer
@@ -18,14 +18,14 @@ export function TideOverlay({ children, open = true }: TideOverlayProps) {
         open={open}
         variant="persistent"
         sx={{
-          '& .MuiDrawer-paper': {
-            height: '40vh',
+          "& .MuiDrawer-paper": {
+            height: "40vh",
             borderTopLeftRadius: theme.spacing(2),
             borderTopRightRadius: theme.spacing(2),
           },
         }}
       >
-        <Box sx={{ height: '100%', overflow: 'auto' }}>{children}</Box>
+        <Box sx={{ height: "100%", overflow: "auto" }}>{children}</Box>
       </Drawer>
     );
   }
@@ -35,14 +35,14 @@ export function TideOverlay({ children, open = true }: TideOverlayProps) {
     <Paper
       elevation={3}
       sx={{
-        position: 'fixed',
+        position: "fixed",
         top: 0,
         right: 0,
-        width: '400px',
-        height: '100vh',
-        overflow: 'auto',
+        width: "400px",
+        height: "100vh",
+        overflow: "auto",
         zIndex: theme.zIndex.drawer,
-        display: open ? 'block' : 'none',
+        display: open ? "block" : "none",
         backgroundColor: theme.palette.background.paper,
       }}
     >
