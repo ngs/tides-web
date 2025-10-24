@@ -2,6 +2,7 @@
 export interface TidePrediction {
   time: string; // ISO 8601 datetime string
   height_m: number; // Height in meters
+  depth_m?: number; // Water depth in meters (optional, not present for land)
 }
 
 // API response for tide predictions

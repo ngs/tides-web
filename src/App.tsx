@@ -61,6 +61,75 @@ function App() {
   const [predictions, setPredictions] = useState<TidePrediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string>("Loading...");
+
+  // Fetch location name from reverse geocoding
+  useEffect(() => {
+    const fetchLocationName = async () => {
+      try {
+        // Load Google Maps Geocoding library
+        const { Geocoder } = (await google.maps.importLibrary(
+          "geocoding"
+        )) as google.maps.GeocodingLibrary;
+
+        const geocoder = new Geocoder();
+        const latlng = {
+          lat: debouncedPosition.lat,
+          lng: debouncedPosition.lon,
+        };
+
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          console.info(results, status);
+          if (status === "OK" && results && results.length > 0) {
+            // Find the most detailed result (skip plus_code only results)
+            const detailedResult = results.find(
+              (r) => !r.types.includes("plus_code") || r.types.length > 1
+            ) || results[0];
+
+            const components = detailedResult.address_components;
+
+            const locality = components.find((c) =>
+              c.types.includes("locality")
+            )?.long_name;
+
+            // Look for sublocality_level_2 only (exclude level_3)
+            const sublocality = components.find((c) =>
+              c.types.includes("sublocality_level_2")
+            )?.long_name;
+
+            const admin = components.find((c) =>
+              c.types.includes("administrative_area_level_1")
+            )?.long_name;
+
+            const country = components.find((c) =>
+              c.types.includes("country")
+            )?.long_name;
+
+            // Format as "Sublocality, Locality" or just "Locality"
+            let name: string;
+            if (sublocality && locality) {
+              name = `${sublocality}, ${locality}`;
+            } else {
+              name = locality || admin || country || "Unknown Location";
+            }
+
+            setLocationName(name);
+            document.title = `${name} - Tides`;
+          } else {
+            console.error("Geocoder failed:", status);
+            setLocationName("Unknown Location");
+            document.title = "Tides";
+          }
+        });
+      } catch (err) {
+        console.error("Error fetching location name:", err);
+        setLocationName("Unknown Location");
+        document.title = "Tides";
+      }
+    };
+
+    fetchLocationName();
+  }, [debouncedPosition.lat, debouncedPosition.lon]);
 
   // Fetch tide predictions when debounced position or selected date changes
   useEffect(() => {
@@ -69,7 +138,7 @@ function App() {
         "Fetching tide predictions for:",
         debouncedPosition,
         "date:",
-        selectedDate,
+        selectedDate
       );
       setLoading(true);
       setError(null);
@@ -85,7 +154,7 @@ function App() {
           start,
           end,
           "30m",
-          "fes",
+          "fes"
         );
 
         console.log("Received predictions:", response.predictions.length);
@@ -95,7 +164,7 @@ function App() {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to fetch tide predictions",
+            : "Failed to fetch tide predictions"
         );
         setPredictions([]);
       } finally {
@@ -142,6 +211,8 @@ function App() {
             loading={loading}
             error={error}
             onDateChange={setSelectedDate}
+            position={debouncedPosition}
+            locationName={locationName}
           />
         </TideOverlay>
       </Box>

@@ -10,6 +10,11 @@ export function TideOverlay({ children, open = true }: TideOverlayProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const commonStyles = {
+    backgroundColor: theme.palette.background.paper,
+    backgroundImage: "none",
+  };
+
   if (isMobile) {
     // Mobile: Bottom drawer
     return (
@@ -17,11 +22,15 @@ export function TideOverlay({ children, open = true }: TideOverlayProps) {
         anchor="bottom"
         open={open}
         variant="persistent"
-        sx={{
-          "& .MuiDrawer-paper": {
-            height: "40vh",
-            borderTopLeftRadius: theme.spacing(2),
-            borderTopRightRadius: theme.spacing(2),
+        slotProps={{
+          paper: {
+            elevation: 3,
+            sx: {
+              height: "40vh",
+              borderTopLeftRadius: theme.spacing(2),
+              borderTopRightRadius: theme.spacing(2),
+              ...commonStyles,
+            },
           },
         }}
       >
@@ -43,7 +52,7 @@ export function TideOverlay({ children, open = true }: TideOverlayProps) {
         overflow: "auto",
         zIndex: theme.zIndex.drawer,
         display: open ? "block" : "none",
-        backgroundColor: theme.palette.background.paper,
+        ...commonStyles,
       }}
     >
       {children}

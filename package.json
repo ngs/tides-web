@@ -14,13 +14,17 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/pro-regular-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.6",
     "@googlemaps/js-api-loader": "^2.0.1",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "date-fns": "^4.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "recharts": "^3.3.0"
+    "recharts": "^3.3.0",
+    "suncalc": "^1.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -28,6 +32,7 @@
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
+    "@types/suncalc": "^1.9.2",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
     "@vitejs/plugin-react": "^5.0.4",

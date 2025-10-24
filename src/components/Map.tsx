@@ -48,7 +48,8 @@ export function Map({ position, onPositionChange }: MapProps) {
           zoom: position.zoom,
           mapTypeControl: true,
           streetViewControl: false,
-          fullscreenControl: true,
+          fullscreenControl: false,
+          zoomControl: true,
           mapId: "TIDES_MAP", // Required for AdvancedMarkerElement
         });
 
