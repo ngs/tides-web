@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 export interface UrlStateOptions<T> {
   defaultValue: T;
@@ -27,9 +27,17 @@ export function useUrlState<T>({
     }
   });
 
+  const isFirstRenderRef = useRef(true);
+
   // Update URL when state changes
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // Skip pushState on first render to avoid duplicate history entry
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
 
     const params = new URLSearchParams(window.location.search);
     const serialized = serialize(state);
@@ -44,7 +52,8 @@ export function useUrlState<T>({
     });
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, "", newUrl);
+    // Use pushState to add to browser history, allowing back/forward navigation
+    window.history.pushState({}, "", newUrl);
   }, [state, serialize]);
 
   // Listen for browser back/forward navigation

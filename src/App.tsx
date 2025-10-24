@@ -12,6 +12,7 @@ import { TideGraph } from "./components/TideGraph";
 import { TideOverlay } from "./components/TideOverlay";
 import { useDebounce } from "./hooks/useDebounce";
 import { useUrlState } from "./hooks/useUrlState";
+import { useGeocodingCache } from "./hooks/useGeocodingCache";
 import { fetchTidePredictions } from "./services/tidesApi";
 import type { MapPosition, TidePrediction } from "./types";
 
@@ -64,10 +65,25 @@ function App() {
   const [locationName, setLocationName] = useState<string>("Loading...");
   const [panelSize, setPanelSize] = useState<number>(400); // Default desktop width or mobile height vh
 
+  const geocodingCache = useGeocodingCache();
+
   // Fetch location name from reverse geocoding
   useEffect(() => {
+    let isCancelled = false;
+
     const fetchLocationName = async () => {
       try {
+        // Check cache first
+        const cached = geocodingCache.get(
+          debouncedPosition.lat,
+          debouncedPosition.lon
+        );
+        if (cached) {
+          setLocationName(cached);
+          document.title = `${cached} - Tides`;
+          return;
+        }
+
         // Load Google Maps Geocoding library
         const { Geocoder } = (await google.maps.importLibrary(
           "geocoding"
@@ -80,7 +96,9 @@ function App() {
         };
 
         geocoder.geocode({ location: latlng }, (results, status) => {
-          console.info(results, status);
+          if (isCancelled) {
+            return;
+          }
           if (status === "OK" && results && results.length > 0) {
             // Find the most detailed result
             // Prioritize results that have locality or sublocality in address_components
@@ -121,6 +139,13 @@ function App() {
               name = locality || admin || country || "Unknown Location";
             }
 
+            // Cache the result
+            geocodingCache.set(
+              debouncedPosition.lat,
+              debouncedPosition.lon,
+              name
+            );
+
             setLocationName(name);
             document.title = `${name} - Tides`;
           } else {
@@ -137,7 +162,11 @@ function App() {
     };
 
     fetchLocationName();
-  }, [debouncedPosition.lat, debouncedPosition.lon]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [debouncedPosition.lat, debouncedPosition.lon, geocodingCache]);
 
   // Fetch tide predictions when debounced position or selected date changes
   useEffect(() => {
