@@ -23,6 +23,7 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSunrise, faSunset } from "@fortawesome/pro-regular-svg-icons";
 import * as SunCalc from "suncalc";
+import { MoonPhase } from "./MoonPhase";
 import type { TidePrediction, MapPosition } from "../types";
 
 interface TideGraphProps {
@@ -202,11 +203,25 @@ export function TideGraph({
           flexDirection: { xs: "row", md: "column" },
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 1,
         }}
       >
-        <Typography variant="h6" sx={{ flexShrink: 0 }}>
-          {locationName}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: { xs: "flex-start", md: "center" },
+          }}
+        >
+          <Typography variant="h6" sx={{ flexShrink: 0 }}>
+            {locationName}
+          </Typography>
+          <MoonPhase
+            date={selectedDate}
+            lat={position.lat}
+            lon={position.lon}
+          />
+        </Box>
         <Stack
           direction="row"
           alignItems="center"
