@@ -102,15 +102,21 @@ function App() {
           if (status === "OK" && results && results.length > 0) {
             // Find the most detailed result
             // Prioritize results that have locality or sublocality in address_components
-            const detailedResult = results.find((r) => {
-              // Check if address_components contain locality or sublocality
-              const hasLocalityInfo = r.address_components.some((c) =>
-                c.types.some((t) =>
-                  ["locality", "sublocality", "sublocality_level_1", "sublocality_level_2"].includes(t)
-                )
-              );
-              return hasLocalityInfo;
-            }) || results[0];
+            const detailedResult =
+              results.find((r) => {
+                // Check if address_components contain locality or sublocality
+                const hasLocalityInfo = r.address_components.some((c) =>
+                  c.types.some((t) =>
+                    [
+                      "locality",
+                      "sublocality",
+                      "sublocality_level_1",
+                      "sublocality_level_2",
+                    ].includes(t)
+                  )
+                );
+                return hasLocalityInfo;
+              }) || results[0];
 
             const components = detailedResult.address_components;
 
@@ -229,14 +235,21 @@ function App() {
         {/* Map container */}
         <Box
           sx={{
-            flex: 1,
             position: "relative",
             width: "100%",
-            // On desktop, reduce width to make room for sidebar
-            // On mobile, reduce height to make room for bottom drawer
+            // On desktop, use flex to fill remaining space
+            // On mobile, set explicit height to make room for bottom drawer
+            // Subtract border radius (16px) from mobile map height to show rounded corners
             ...(isMobile
-              ? { height: `${100 - panelSize}vh` }
-              : { width: `calc(100vw - ${panelSize}px)`, height: "100vh" }),
+              ? {
+                  height: `calc(100% - ${panelSize}vh + 16px)`,
+                  flexShrink: 0,
+                }
+              : {
+                  flex: 1,
+                  width: `calc(100vw - ${panelSize}px)`,
+                  height: "100vh",
+                }),
           }}
         >
           <Map position={mapPosition} onPositionChange={setMapPosition} />
