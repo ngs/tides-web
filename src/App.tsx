@@ -62,6 +62,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState<string>("Loading...");
+  const [panelSize, setPanelSize] = useState<number>(400); // Default desktop width or mobile height vh
 
   // Fetch location name from reverse geocoding
   useEffect(() => {
@@ -81,10 +82,17 @@ function App() {
         geocoder.geocode({ location: latlng }, (results, status) => {
           console.info(results, status);
           if (status === "OK" && results && results.length > 0) {
-            // Find the most detailed result (skip plus_code only results)
-            const detailedResult = results.find(
-              (r) => !r.types.includes("plus_code") || r.types.length > 1
-            ) || results[0];
+            // Find the most detailed result
+            // Prioritize results that have locality or sublocality in address_components
+            const detailedResult = results.find((r) => {
+              // Check if address_components contain locality or sublocality
+              const hasLocalityInfo = r.address_components.some((c) =>
+                c.types.some((t) =>
+                  ["locality", "sublocality", "sublocality_level_1", "sublocality_level_2"].includes(t)
+                )
+              );
+              return hasLocalityInfo;
+            }) || results[0];
 
             const components = detailedResult.address_components;
 
@@ -196,16 +204,17 @@ function App() {
             position: "relative",
             width: "100%",
             // On desktop, reduce width to make room for sidebar
+            // On mobile, reduce height to make room for bottom drawer
             ...(isMobile
-              ? { height: "60vh" }
-              : { width: "calc(100vw - 400px)", height: "100vh" }),
+              ? { height: `${100 - panelSize}vh` }
+              : { width: `calc(100vw - ${panelSize}px)`, height: "100vh" }),
           }}
         >
           <Map position={mapPosition} onPositionChange={setMapPosition} />
         </Box>
 
         {/* Tide graph overlay */}
-        <TideOverlay>
+        <TideOverlay onSizeChange={setPanelSize}>
           <TideGraph
             predictions={predictions}
             loading={loading}

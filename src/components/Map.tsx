@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import { Box, CircularProgress, Alert } from "@mui/material";
+import { icon } from "@fortawesome/fontawesome-svg-core";
+import { faLocationCrosshairs } from "@fortawesome/pro-regular-svg-icons";
 import type { MapPosition } from "../types";
 
 interface MapProps {
@@ -114,6 +116,64 @@ export function Map({ position, onPositionChange }: MapProps) {
             });
           }
         });
+
+        // Add custom "current location" button
+        const locationButton = document.createElement("button");
+        locationButton.title = "Go to current location";
+        locationButton.style.backgroundColor = "#fff";
+        locationButton.style.border = "2px solid #fff";
+        locationButton.style.borderRadius = "3px";
+        locationButton.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
+        locationButton.style.color = "#666";
+        locationButton.style.cursor = "pointer";
+        locationButton.style.margin = "10px";
+        locationButton.style.padding = "0";
+        locationButton.style.textAlign = "center";
+        locationButton.style.width = "40px";
+        locationButton.style.height = "40px";
+        locationButton.style.display = "flex";
+        locationButton.style.alignItems = "center";
+        locationButton.style.justifyContent = "center";
+
+        // Add Font Awesome icon
+        const locationIcon = icon(faLocationCrosshairs);
+        locationButton.innerHTML = locationIcon.html[0];
+        const svg = locationButton.querySelector("svg");
+        if (svg) {
+          svg.style.width = "18px";
+          svg.style.height = "18px";
+        }
+
+        locationButton.addEventListener("click", () => {
+          // Try HTML5 geolocation
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const currentPos = {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                };
+                map.setCenter(currentPos);
+                marker.position = currentPos;
+                onPositionChange({
+                  lat: currentPos.lat,
+                  lon: currentPos.lng,
+                  zoom: map.getZoom() || position.zoom,
+                });
+              },
+              () => {
+                alert("Error: The Geolocation service failed.");
+              }
+            );
+          } else {
+            // Browser doesn't support Geolocation
+            alert("Error: Your browser doesn't support geolocation.");
+          }
+        });
+
+        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
+          locationButton
+        );
       } catch (error: unknown) {
         console.error("Error loading Google Maps:", error);
         errorRef.current = `Failed to load Google Maps: ${error instanceof Error ? error.message : "Unknown error"}`;
