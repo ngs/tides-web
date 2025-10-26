@@ -75,11 +75,11 @@ export function TideGraph({
   // Calculate day boundaries
   const dayStart = useMemo(
     () => startOfDay(selectedDate).getTime(),
-    [selectedDate]
+    [selectedDate],
   );
   const dayEnd = useMemo(
     () => endOfDay(selectedDate).getTime(),
-    [selectedDate]
+    [selectedDate],
   );
 
   const chartData = useMemo(() => {
@@ -98,7 +98,7 @@ export function TideGraph({
       "TideGraph chartData:",
       data.length,
       "items for",
-      format(selectedDate, "yyyy-MM-dd")
+      format(selectedDate, "yyyy-MM-dd"),
     );
     return data;
   }, [predictions, selectedDate, dayStart, dayEnd]);
@@ -132,6 +132,7 @@ export function TideGraph({
   const xAxisTicks = useMemo(() => {
     const standardTicks = [
       dayStart,
+      dayStart + 1 * 60 * 60 * 1000,
       dayStart + 6 * 60 * 60 * 1000,
       dayStart + 12 * 60 * 60 * 1000,
       dayStart + 18 * 60 * 60 * 1000,
@@ -141,11 +142,51 @@ export function TideGraph({
     return standardTicks;
   }, [dayStart, dayEnd]);
 
+  // Find high and low tides
+  const tideExtremes = useMemo(() => {
+    if (predictions.length < 3) return { highs: [], lows: [] };
+
+    const dayPredictions = predictions.filter((p) => {
+      const time = parseISO(p.time).getTime();
+      return time >= dayStart && time <= dayEnd;
+    });
+
+    const highs: { time: number; depth: number }[] = [];
+    const lows: { time: number; depth: number }[] = [];
+
+    for (let i = 1; i < dayPredictions.length - 1; i++) {
+      const prev = dayPredictions[i - 1].depth_m;
+      const curr = dayPredictions[i].depth_m;
+      const next = dayPredictions[i + 1].depth_m;
+
+      if (prev === undefined || curr === undefined || next === undefined)
+        continue;
+
+      // High tide: current is greater than both neighbors
+      if (curr > prev && curr > next) {
+        highs.push({
+          time: parseISO(dayPredictions[i].time).getTime(),
+          depth: curr,
+        });
+      }
+      // Low tide: current is less than both neighbors
+      else if (curr < prev && curr < next) {
+        lows.push({
+          time: parseISO(dayPredictions[i].time).getTime(),
+          depth: curr,
+        });
+      }
+    }
+
+    return { highs, lows };
+  }, [predictions, dayStart, dayEnd]);
+
   console.log("TideGraph render:", {
     predictions: predictions.length,
     loading,
     error,
     sunTimes,
+    tideExtremes,
   });
 
   if (error) {
@@ -444,6 +485,7 @@ export function TideGraph({
                 strokeWidth={3}
                 dot={({ cx, cy, payload }) => {
                   const { time } = payload;
+
                   // Show red dot at current time
                   if (Math.abs(time - currentTime) < 900000) {
                     // Within 15 minutes
@@ -459,10 +501,91 @@ export function TideGraph({
                       />
                     );
                   }
+
+                  // Check if this is a high tide
+                  const isHigh = tideExtremes.highs.some(
+                    (h) => Math.abs(h.time - time) < 1000,
+                  );
+                  if (isHigh) {
+                    return (
+                      <g key={time}>
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={4}
+                          fill={theme.palette.info.main}
+                          stroke="#fff"
+                          strokeWidth={2}
+                        />
+                        <text
+                          x={cx}
+                          y={cy - 10}
+                          textAnchor="middle"
+                          fill={theme.palette.info.main}
+                          fontSize={11}
+                          fontWeight="bold"
+                        >
+                          H {format(new Date(time), "HH:mm")}
+                        </text>
+                      </g>
+                    );
+                  }
+
+                  // Check if this is a low tide
+                  const isLow = tideExtremes.lows.some(
+                    (l) => Math.abs(l.time - time) < 1000,
+                  );
+                  if (isLow) {
+                    return (
+                      <g key={time}>
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={4}
+                          fill={theme.palette.warning.main}
+                          stroke="#fff"
+                          strokeWidth={2}
+                        />
+                        <text
+                          x={cx}
+                          y={cy + 20}
+                          textAnchor="middle"
+                          fill={theme.palette.warning.main}
+                          fontSize={11}
+                          fontWeight="bold"
+                        >
+                          L {format(new Date(time), "HH:mm")}
+                        </text>
+                      </g>
+                    );
+                  }
+
                   return <Fragment key={time}></Fragment>;
                 }}
                 activeDot={{ r: 6 }}
               />
+              {/* High tide vertical lines */}
+              {tideExtremes.highs.map((high) => (
+                <ReferenceLine
+                  key={`high-${high.time}`}
+                  x={high.time}
+                  stroke={theme.palette.info.main}
+                  strokeWidth={1}
+                  strokeDasharray="5 5"
+                  strokeOpacity={0.5}
+                />
+              ))}
+              {/* Low tide vertical lines */}
+              {tideExtremes.lows.map((low) => (
+                <ReferenceLine
+                  key={`low-${low.time}`}
+                  x={low.time}
+                  stroke={theme.palette.warning.main}
+                  strokeWidth={1}
+                  strokeDasharray="5 5"
+                  strokeOpacity={0.5}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </Box>
