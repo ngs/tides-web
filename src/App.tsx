@@ -14,7 +14,10 @@ import { useDebounce } from "./hooks/useDebounce";
 import { useUrlState } from "./hooks/useUrlState";
 import { useGeocodingCache } from "./hooks/useGeocodingCache";
 import { fetchTidePredictions } from "./services/tidesApi";
-import { loadLastPosition, saveLastPosition } from "./utils/lastPositionStorage";
+import {
+  loadLastPosition,
+  saveLastPosition,
+} from "./utils/lastPositionStorage";
 import type { MapPosition, TidePrediction, TideExtreme } from "./types";
 
 // Default map position (Tokyo Bay area)
