@@ -14,6 +14,7 @@ import { useDebounce } from "./hooks/useDebounce";
 import { useUrlState } from "./hooks/useUrlState";
 import { useGeocodingCache } from "./hooks/useGeocodingCache";
 import { fetchTidePredictions } from "./services/tidesApi";
+import { loadLastPosition, saveLastPosition } from "./utils/lastPositionStorage";
 import type { MapPosition, TidePrediction, TideExtreme } from "./types";
 
 // Default map position (Tokyo Bay area)
@@ -38,13 +39,23 @@ const mapPositionUrlOptions = {
     const lon = params.get("lon");
     const zoom = params.get("zoom");
 
-    if (!lat || !lon) return DEFAULT_POSITION;
+    // If URL has position parameters, use them
+    if (lat && lon) {
+      return {
+        lat: parseFloat(lat) || DEFAULT_POSITION.lat,
+        lon: parseFloat(lon) || DEFAULT_POSITION.lon,
+        zoom: zoom ? parseInt(zoom, 10) : DEFAULT_POSITION.zoom,
+      };
+    }
 
-    return {
-      lat: parseFloat(lat) || DEFAULT_POSITION.lat,
-      lon: parseFloat(lon) || DEFAULT_POSITION.lon,
-      zoom: zoom ? parseInt(zoom, 10) : DEFAULT_POSITION.zoom,
-    };
+    // Otherwise, try to load from localStorage
+    const lastPosition = loadLastPosition();
+    if (lastPosition) {
+      return lastPosition.position;
+    }
+
+    // Finally, fall back to default
+    return DEFAULT_POSITION;
   },
 };
 
@@ -97,9 +108,17 @@ function App() {
   const [lows, setLows] = useState<TideExtreme[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locationName, setLocationName] = useState<string>(
-    LOADING_LOCATION_NAME,
-  );
+  const [locationName, setLocationName] = useState<string>(() => {
+    // Try to load location name from localStorage if no URL params
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("lat") && !params.has("lon")) {
+      const lastPosition = loadLastPosition();
+      if (lastPosition) {
+        return lastPosition.locationName;
+      }
+    }
+    return LOADING_LOCATION_NAME;
+  });
   const [panelSize, setPanelSize] = useState<number>(400); // Default desktop width or mobile height vh
 
   const geocodingCache = useGeocodingCache();
@@ -218,6 +237,16 @@ function App() {
       isCancelled = true;
     };
   }, [debouncedPosition.lat, debouncedPosition.lon, geocodingCache]);
+
+  // Save last position and location name to localStorage
+  useEffect(() => {
+    // Don't save if location name is still loading
+    if (locationName === LOADING_LOCATION_NAME) {
+      return;
+    }
+
+    saveLastPosition(debouncedPosition, locationName);
+  }, [debouncedPosition, locationName]);
 
   // Fetch tide predictions when load position or selected date changes
   useEffect(() => {
