@@ -175,7 +175,17 @@ export function TideOverlay({
             }}
           />
         </Box>
-        <Box sx={{ height: "100%", overflow: "auto", pt: 2 }}>{children}</Box>
+        <Box
+          sx={{
+            height: "100%",
+            overflow: "auto",
+            pt: 2,
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {children}
+        </Box>
       </Drawer>
     );
   }
@@ -216,7 +226,16 @@ export function TideOverlay({
           }}
         />
       </Box>
-      <Box sx={{ height: "100%", overflow: "auto", pl: 2 }}>{children}</Box>
+      <Box
+        sx={{
+          height: "100%",
+          overflow: "auto",
+          pl: 2,
+          overscrollBehavior: "contain",
+        }}
+      >
+        {children}
+      </Box>
     </Paper>
   );
 }

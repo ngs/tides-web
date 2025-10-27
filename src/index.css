@@ -28,6 +28,19 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overscroll-behavior: none;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+html {
+  overscroll-behavior: none;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 h1 {
@@ -68,26 +81,26 @@ button:focus-visible {
 }
 
 /* Google Maps map type control button styling */
-/* Reset all button borders first */
-.gm-style button {
+/* Target the bundled control buttons */
+
+/* Reset all map type control buttons */
+.gm-bundled-control button,
+.gm-bundled-control .gm-style-mtc button {
   border-radius: 0 !important;
 }
 
-/* Style for horizontal bar map type control */
-.gm-style .gm-style-mtc button {
-  border-radius: 0 !important;
-}
-
-/* First button (left side) */
-.gm-style .gm-style-mtc > div:first-child button,
-.gm-style .gm-style-mtc button:first-child {
+/* First button (left side) - 地図 */
+.gm-bundled-control .gm-style-mtc > div:first-child button {
   border-top-left-radius: 2px !important;
   border-bottom-left-radius: 2px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }
 
-/* Last button (right side) */
-.gm-style .gm-style-mtc > div:last-child button,
-.gm-style .gm-style-mtc button:last-child {
+/* Last button (right side) - 航空写真 */
+.gm-bundled-control .gm-style-mtc > div:last-child button {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
   border-top-right-radius: 2px !important;
   border-bottom-right-radius: 2px !important;
 }
