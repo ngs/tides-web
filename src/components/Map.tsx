@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
-import { Box, CircularProgress, Alert } from "@mui/material";
+import { Box, CircularProgress, Alert, Button } from "@mui/material";
 import { icon } from "@fortawesome/fontawesome-svg-core";
 import { faLocationCrosshairs } from "@fortawesome/pro-regular-svg-icons";
 import type { MapPosition } from "../types";
 
 interface MapProps {
   position: MapPosition;
-  onPositionChange: (position: MapPosition) => void;
+  onPositionChange: (position: MapPosition, immediate?: boolean) => void;
 }
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
@@ -21,6 +21,23 @@ export function Map({ position, onPositionChange }: MapProps) {
   const isLoadingRef = useRef(false);
   const errorRef = useRef<string | null>(null);
   const isUpdatingFromPropsRef = useRef(false);
+  const [pendingPosition, setPendingPosition] = useState<MapPosition | null>(
+    null,
+  );
+  const [showLoadButton, setShowLoadButton] = useState(false);
+
+  const handleLoadLocation = () => {
+    if (pendingPosition && markerRef.current && googleMapRef.current) {
+      // Move marker to center and load immediately
+      const center = googleMapRef.current.getCenter();
+      if (center) {
+        markerRef.current.position = { lat: center.lat(), lng: center.lng() };
+        onPositionChange(pendingPosition, true); // immediate load
+      }
+      setShowLoadButton(false);
+      setPendingPosition(null);
+    }
+  };
 
   useEffect(() => {
     if (!mapRef.current || isLoadingRef.current) return;
@@ -36,8 +53,9 @@ export function Map({ position, onPositionChange }: MapProps) {
         // Configure the API
         setOptions({ key: GOOGLE_MAPS_API_KEY, v: "weekly" });
 
-        // Load the maps and marker libraries
+        // Load the maps, marker, and geometry libraries
         await importLibrary("maps");
+        await importLibrary("geometry");
         const { AdvancedMarkerElement } = (await importLibrary(
           "marker",
         )) as google.maps.MarkerLibrary;
@@ -71,11 +89,13 @@ export function Map({ position, onPositionChange }: MapProps) {
         marker.addListener("dragend", () => {
           const pos = marker.position as google.maps.LatLngLiteral;
           if (pos) {
-            onPositionChange({
+            const newPos = {
               lat: pos.lat,
               lon: pos.lng,
               zoom: map.getZoom() || position.zoom,
-            });
+            };
+            onPositionChange(newPos, true); // immediate load
+            map.panTo(pos);
           }
         });
 
@@ -83,24 +103,13 @@ export function Map({ position, onPositionChange }: MapProps) {
         map.addListener("click", (e: google.maps.MapMouseEvent) => {
           if (e.latLng) {
             marker.position = e.latLng;
-            onPositionChange({
+            const newPos = {
               lat: e.latLng.lat(),
               lon: e.latLng.lng(),
               zoom: map.getZoom() || position.zoom,
-            });
-          }
-        });
-
-        // Update zoom when map zoom changes (only from user interaction)
-        map.addListener("zoom_changed", () => {
-          if (isUpdatingFromPropsRef.current) return;
-          const center = map.getCenter();
-          if (center) {
-            onPositionChange({
-              lat: center.lat(),
-              lon: center.lng(),
-              zoom: map.getZoom() || position.zoom,
-            });
+            };
+            onPositionChange(newPos, true); // immediate load
+            map.panTo(e.latLng);
           }
         });
 
@@ -108,12 +117,24 @@ export function Map({ position, onPositionChange }: MapProps) {
         map.addListener("dragend", () => {
           if (isUpdatingFromPropsRef.current) return;
           const center = map.getCenter();
-          if (center) {
-            onPositionChange({
-              lat: center.lat(),
-              lon: center.lng(),
-              zoom: map.getZoom() || position.zoom,
-            });
+          if (center && marker.position) {
+            const markerPos = marker.position as google.maps.LatLngLiteral;
+            // Check if marker is not at center
+            const distance =
+              google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(center.lat(), center.lng()),
+                new google.maps.LatLng(markerPos.lat, markerPos.lng),
+              );
+            // If marker is far from center (more than 100m), show load button
+            if (distance > 100) {
+              const newPos = {
+                lat: center.lat(),
+                lon: center.lng(),
+                zoom: map.getZoom() || position.zoom,
+              };
+              setPendingPosition(newPos);
+              setShowLoadButton(true);
+            }
           }
         });
 
@@ -155,15 +176,16 @@ export function Map({ position, onPositionChange }: MapProps) {
                 };
                 map.setCenter(currentPos);
                 marker.position = currentPos;
-                onPositionChange({
+                const newPos = {
                   lat: currentPos.lat,
                   lon: currentPos.lng,
                   zoom: map.getZoom() || position.zoom,
-                });
+                };
+                onPositionChange(newPos, true); // immediate load
               },
               () => {
                 alert("Error: The Geolocation service failed.");
-              }
+              },
             );
           } else {
             // Browser doesn't support Geolocation
@@ -172,7 +194,7 @@ export function Map({ position, onPositionChange }: MapProps) {
         });
 
         map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
-          locationButton
+          locationButton,
         );
       } catch (error: unknown) {
         console.error("Error loading Google Maps:", error);
@@ -231,6 +253,35 @@ export function Map({ position, onPositionChange }: MapProps) {
           }}
         >
           <CircularProgress />
+        </Box>
+      )}
+      {showLoadButton && pendingPosition && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 1000,
+          }}
+        >
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleLoadLocation}
+            sx={{
+              backgroundColor: "#fff",
+              color: "#333",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              textTransform: "none",
+              fontWeight: "bold",
+              "&:hover": {
+                backgroundColor: "#f5f5f5",
+              },
+            }}
+          >
+            Load this location
+          </Button>
         </Box>
       )}
     </Box>

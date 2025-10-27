@@ -1,10 +1,4 @@
-import {
-  Box,
-  Drawer,
-  Paper,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { Box, Drawer, Paper, useMediaQuery, useTheme } from "@mui/material";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 
 interface TideOverlayProps {
@@ -67,7 +61,7 @@ export function TideOverlay({
       const newWidth = window.innerWidth - moveEvent.clientX;
       const clampedWidth = Math.max(
         MIN_DESKTOP_WIDTH,
-        Math.min(MAX_DESKTOP_WIDTH, newWidth)
+        Math.min(MAX_DESKTOP_WIDTH, newWidth),
       );
       setDesktopWidth(clampedWidth);
     };
@@ -95,10 +89,11 @@ export function TideOverlay({
       if (!isDraggingRef.current) return;
 
       const clientY = getClientY(moveEvent);
-      const newHeightVh = ((window.innerHeight - clientY) / window.innerHeight) * 100;
+      const newHeightVh =
+        ((window.innerHeight - clientY) / window.innerHeight) * 100;
       const clampedHeight = Math.max(
         MIN_MOBILE_HEIGHT,
-        Math.min(MAX_MOBILE_HEIGHT, newHeightVh)
+        Math.min(MAX_MOBILE_HEIGHT, newHeightVh),
       );
       setMobileHeight(clampedHeight);
     };

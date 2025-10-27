@@ -31,7 +31,7 @@ export function useGeocodingCache() {
 
       return cached.locationName;
     },
-    [getCacheKey]
+    [getCacheKey],
   );
 
   const set = useCallback(
@@ -51,7 +51,7 @@ export function useGeocodingCache() {
         timestamp: Date.now(),
       });
     },
-    [getCacheKey]
+    [getCacheKey],
   );
 
   const clear = useCallback(() => {

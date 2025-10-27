@@ -58,6 +58,7 @@ function App() {
   const [mapPosition, setMapPosition] = useUrlState(mapPositionUrlOptions);
   const debouncedPosition = useDebounce(mapPosition, 500);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [loadPosition, setLoadPosition] = useState(mapPosition);
 
   const [predictions, setPredictions] = useState<TidePrediction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +67,13 @@ function App() {
   const [panelSize, setPanelSize] = useState<number>(400); // Default desktop width or mobile height vh
 
   const geocodingCache = useGeocodingCache();
+
+  const handlePositionChange = (position: MapPosition, immediate?: boolean) => {
+    setMapPosition(position);
+    if (immediate) {
+      setLoadPosition(position);
+    }
+  };
 
   // Fetch location name from reverse geocoding
   useEffect(() => {
@@ -76,7 +84,7 @@ function App() {
         // Check cache first
         const cached = geocodingCache.get(
           debouncedPosition.lat,
-          debouncedPosition.lon
+          debouncedPosition.lon,
         );
         if (cached) {
           setLocationName(cached);
@@ -86,7 +94,7 @@ function App() {
 
         // Load Google Maps Geocoding library
         const { Geocoder } = (await google.maps.importLibrary(
-          "geocoding"
+          "geocoding",
         )) as google.maps.GeocodingLibrary;
 
         const geocoder = new Geocoder();
@@ -112,8 +120,8 @@ function App() {
                       "sublocality",
                       "sublocality_level_1",
                       "sublocality_level_2",
-                    ].includes(t)
-                  )
+                    ].includes(t),
+                  ),
                 );
                 return hasLocalityInfo;
               }) || results[0];
@@ -121,20 +129,20 @@ function App() {
             const components = detailedResult.address_components;
 
             const locality = components.find((c) =>
-              c.types.includes("locality")
+              c.types.includes("locality"),
             )?.long_name;
 
             // Look for sublocality_level_2 only (exclude level_3)
             const sublocality = components.find((c) =>
-              c.types.includes("sublocality_level_2")
+              c.types.includes("sublocality_level_2"),
             )?.long_name;
 
             const admin = components.find((c) =>
-              c.types.includes("administrative_area_level_1")
+              c.types.includes("administrative_area_level_1"),
             )?.long_name;
 
             const country = components.find((c) =>
-              c.types.includes("country")
+              c.types.includes("country"),
             )?.long_name;
 
             // Format as "Sublocality, Locality" or just "Locality"
@@ -149,7 +157,7 @@ function App() {
             geocodingCache.set(
               debouncedPosition.lat,
               debouncedPosition.lon,
-              name
+              name,
             );
 
             setLocationName(name);
@@ -174,14 +182,14 @@ function App() {
     };
   }, [debouncedPosition.lat, debouncedPosition.lon, geocodingCache]);
 
-  // Fetch tide predictions when debounced position or selected date changes
+  // Fetch tide predictions when load position or selected date changes
   useEffect(() => {
     const fetchData = async () => {
       console.log(
         "Fetching tide predictions for:",
-        debouncedPosition,
+        loadPosition,
         "date:",
-        selectedDate
+        selectedDate,
       );
       setLoading(true);
       setError(null);
@@ -192,12 +200,12 @@ function App() {
         const end = addDays(start, 1);
 
         const response = await fetchTidePredictions(
-          debouncedPosition.lat,
-          debouncedPosition.lon,
+          loadPosition.lat,
+          loadPosition.lon,
           start,
           end,
           "30m",
-          "fes"
+          "fes",
         );
 
         console.log("Received predictions:", response.predictions.length);
@@ -207,7 +215,7 @@ function App() {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to fetch tide predictions"
+            : "Failed to fetch tide predictions",
         );
         setPredictions([]);
       } finally {
@@ -216,7 +224,12 @@ function App() {
     };
 
     fetchData();
-  }, [debouncedPosition, selectedDate]);
+  }, [loadPosition, selectedDate]);
+
+  // Update load position when debounced position changes (for map drag)
+  useEffect(() => {
+    setLoadPosition(debouncedPosition);
+  }, [debouncedPosition]);
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -252,7 +265,7 @@ function App() {
                 }),
           }}
         >
-          <Map position={mapPosition} onPositionChange={setMapPosition} />
+          <Map position={mapPosition} onPositionChange={handlePositionChange} />
         </Box>
 
         {/* Tide graph overlay */}
