@@ -18,16 +18,25 @@ import {
   addDays,
   subDays,
 } from "date-fns";
-import { Box, Typography, IconButton, Stack, useTheme } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Stack,
+  useTheme,
+  CircularProgress,
+} from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSunrise, faSunset } from "@fortawesome/pro-regular-svg-icons";
 import * as SunCalc from "suncalc";
 import { MoonPhase } from "./MoonPhase";
-import type { TidePrediction, MapPosition } from "../types";
+import type { TidePrediction, TideExtreme, MapPosition } from "../types";
 
 interface TideGraphProps {
   predictions: TidePrediction[];
+  highs: TideExtreme[];
+  lows: TideExtreme[];
   loading?: boolean;
   error?: string | null;
   onDateChange?: (date: Date) => void;
@@ -37,6 +46,8 @@ interface TideGraphProps {
 
 export function TideGraph({
   predictions: rawPredictions,
+  highs: rawHighs,
+  lows: rawLows,
   loading,
   error,
   onDateChange,
@@ -49,13 +60,32 @@ export function TideGraph({
 
   const predictions = rawPredictions;
 
-  // Update current time every minute
+  // Update current time every minute at 0 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000); // Update every minute
+    // Initial update
+    setCurrentTime(Date.now());
 
-    return () => clearInterval(interval);
+    // Calculate milliseconds until next minute (0 seconds)
+    const now = new Date();
+    const msUntilNextMinute =
+      (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    // Set timeout to sync with the start of the next minute
+    const syncTimeout = setTimeout(() => {
+      setCurrentTime(Date.now());
+
+      // Then update every 60 seconds
+      interval = setInterval(() => {
+        setCurrentTime(Date.now());
+      }, 60000);
+    }, msUntilNextMinute);
+
+    return () => {
+      clearTimeout(syncTimeout);
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   // Navigate to previous day
@@ -94,14 +124,46 @@ export function TideGraph({
       depth: p.depth_m ? p.depth_m : undefined, // Keep depth in meters
       formattedTime: format(parseISO(p.time), "MM/dd HH:mm"),
     }));
+
+    // Add extrema points to chart data for accurate plotting
+    const extremaPoints = [
+      ...rawHighs
+        .filter((h) => {
+          const time = parseISO(h.time).getTime();
+          return time >= dayStart && time <= dayEnd;
+        })
+        .map((h) => ({
+          time: parseISO(h.time).getTime(),
+          depth: h.depth_m,
+          formattedTime: format(parseISO(h.time), "MM/dd HH:mm"),
+          isHigh: true,
+        })),
+      ...rawLows
+        .filter((l) => {
+          const time = parseISO(l.time).getTime();
+          return time >= dayStart && time <= dayEnd;
+        })
+        .map((l) => ({
+          time: parseISO(l.time).getTime(),
+          depth: l.depth_m,
+          formattedTime: format(parseISO(l.time), "MM/dd HH:mm"),
+          isLow: true,
+        })),
+    ];
+
+    // Merge and sort by time
+    const allData = [...data, ...extremaPoints].sort((a, b) => a.time - b.time);
+
     console.log(
       "TideGraph chartData:",
       data.length,
-      "items for",
+      "prediction items,",
+      extremaPoints.length,
+      "extrema points for",
       format(selectedDate, "yyyy-MM-dd"),
     );
-    return data;
-  }, [predictions, selectedDate, dayStart, dayEnd]);
+    return allData;
+  }, [predictions, rawHighs, rawLows, selectedDate, dayStart, dayEnd]);
 
   const { minDepth, maxDepth } = useMemo(() => {
     const depths = predictions
@@ -142,44 +204,31 @@ export function TideGraph({
     return standardTicks;
   }, [dayStart, dayEnd]);
 
-  // Find high and low tides
+  // Convert API highs and lows to the format used by the chart
   const tideExtremes = useMemo(() => {
-    if (predictions.length < 3) return { highs: [], lows: [] };
+    // Filter highs and lows for selected day only
+    const dayHighs = rawHighs
+      .filter((h) => {
+        const time = parseISO(h.time).getTime();
+        return time >= dayStart && time <= dayEnd;
+      })
+      .map((h) => ({
+        time: parseISO(h.time).getTime(),
+        depth: h.depth_m,
+      }));
 
-    const dayPredictions = predictions.filter((p) => {
-      const time = parseISO(p.time).getTime();
-      return time >= dayStart && time <= dayEnd;
-    });
+    const dayLows = rawLows
+      .filter((l) => {
+        const time = parseISO(l.time).getTime();
+        return time >= dayStart && time <= dayEnd;
+      })
+      .map((l) => ({
+        time: parseISO(l.time).getTime(),
+        depth: l.depth_m,
+      }));
 
-    const highs: { time: number; depth: number }[] = [];
-    const lows: { time: number; depth: number }[] = [];
-
-    for (let i = 1; i < dayPredictions.length - 1; i++) {
-      const prev = dayPredictions[i - 1].depth_m;
-      const curr = dayPredictions[i].depth_m;
-      const next = dayPredictions[i + 1].depth_m;
-
-      if (prev === undefined || curr === undefined || next === undefined)
-        continue;
-
-      // High tide: current is greater than both neighbors
-      if (curr > prev && curr > next) {
-        highs.push({
-          time: parseISO(dayPredictions[i].time).getTime(),
-          depth: curr,
-        });
-      }
-      // Low tide: current is less than both neighbors
-      else if (curr < prev && curr < next) {
-        lows.push({
-          time: parseISO(dayPredictions[i].time).getTime(),
-          depth: curr,
-        });
-      }
-    }
-
-    return { highs, lows };
-  }, [predictions, dayStart, dayEnd]);
+    return { highs: dayHighs, lows: dayLows };
+  }, [rawHighs, rawLows, dayStart, dayEnd]);
 
   console.log("TideGraph render:", {
     predictions: predictions.length,
@@ -187,6 +236,8 @@ export function TideGraph({
     error,
     sunTimes,
     tideExtremes,
+    rawHighs: rawHighs.length,
+    rawLows: rawLows.length,
   });
 
   if (error) {
@@ -199,8 +250,16 @@ export function TideGraph({
 
   if (loading) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography>Loading tide data...</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          width: "100%",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
       </Box>
     );
   }
@@ -483,8 +542,9 @@ export function TideGraph({
                 dataKey="depth"
                 stroke="#00bcd4"
                 strokeWidth={3}
+                isAnimationActive={false}
                 dot={({ cx, cy, payload }) => {
-                  const { time } = payload;
+                  const { time, isHigh, isLow } = payload;
 
                   // Show red dot at current time
                   if (Math.abs(time - currentTime) < 900000) {
@@ -503,9 +563,6 @@ export function TideGraph({
                   }
 
                   // Check if this is a high tide
-                  const isHigh = tideExtremes.highs.some(
-                    (h) => Math.abs(h.time - time) < 1000,
-                  );
                   if (isHigh) {
                     return (
                       <g key={time}>
@@ -532,9 +589,6 @@ export function TideGraph({
                   }
 
                   // Check if this is a low tide
-                  const isLow = tideExtremes.lows.some(
-                    (l) => Math.abs(l.time - time) < 1000,
-                  );
                   if (isLow) {
                     return (
                       <g key={time}>

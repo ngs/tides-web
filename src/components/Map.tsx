@@ -67,6 +67,10 @@ export function Map({ position, onPositionChange }: MapProps) {
           center: { lat: position.lat, lng: position.lon },
           zoom: position.zoom,
           mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: google.maps.ControlPosition.TOP_LEFT,
+          },
           streetViewControl: false,
           fullscreenControl: false,
           zoomControl: true,
@@ -96,6 +100,9 @@ export function Map({ position, onPositionChange }: MapProps) {
             };
             onPositionChange(newPos, true); // immediate load
             map.panTo(pos);
+            // Hide load button when marker is moved
+            setShowLoadButton(false);
+            setPendingPosition(null);
           }
         });
 
@@ -110,23 +117,26 @@ export function Map({ position, onPositionChange }: MapProps) {
             };
             onPositionChange(newPos, true); // immediate load
             map.panTo(e.latLng);
+            // Hide load button when marker is moved
+            setShowLoadButton(false);
+            setPendingPosition(null);
           }
         });
 
-        // Update when map is dragged (only from user interaction)
-        map.addListener("dragend", () => {
+        // Check if marker is visible in map bounds
+        const checkMarkerVisibility = () => {
           if (isUpdatingFromPropsRef.current) return;
+          const bounds = map.getBounds();
           const center = map.getCenter();
-          if (center && marker.position) {
+          if (bounds && center && marker.position) {
             const markerPos = marker.position as google.maps.LatLngLiteral;
-            // Check if marker is not at center
-            const distance =
-              google.maps.geometry.spherical.computeDistanceBetween(
-                new google.maps.LatLng(center.lat(), center.lng()),
-                new google.maps.LatLng(markerPos.lat, markerPos.lng),
-              );
-            // If marker is far from center (more than 100m), show load button
-            if (distance > 100) {
+            const markerLatLng = new google.maps.LatLng(
+              markerPos.lat,
+              markerPos.lng,
+            );
+
+            // Check if marker is outside the visible bounds
+            if (!bounds.contains(markerLatLng)) {
               const newPos = {
                 lat: center.lat(),
                 lon: center.lng(),
@@ -134,9 +144,17 @@ export function Map({ position, onPositionChange }: MapProps) {
               };
               setPendingPosition(newPos);
               setShowLoadButton(true);
+            } else {
+              // Marker is visible, hide the button
+              setShowLoadButton(false);
+              setPendingPosition(null);
             }
           }
-        });
+        };
+
+        // Update when map is dragged or zoomed
+        map.addListener("dragend", checkMarkerVisibility);
+        map.addListener("zoom_changed", checkMarkerVisibility);
 
         // Add custom "current location" button
         const locationButton = document.createElement("button");
@@ -182,6 +200,9 @@ export function Map({ position, onPositionChange }: MapProps) {
                   zoom: map.getZoom() || position.zoom,
                 };
                 onPositionChange(newPos, true); // immediate load
+                // Hide load button when marker is moved
+                setShowLoadButton(false);
+                setPendingPosition(null);
               },
               () => {
                 alert("Error: The Geolocation service failed.");
@@ -247,9 +268,8 @@ export function Map({ position, onPositionChange }: MapProps) {
         <Box
           sx={{
             position: "absolute",
-            top: "50%",
+            top: "10px",
             left: "50%",
-            transform: "translate(-50%, -50%)",
           }}
         >
           <CircularProgress />
@@ -259,9 +279,8 @@ export function Map({ position, onPositionChange }: MapProps) {
         <Box
           sx={{
             position: "absolute",
-            top: "50%",
+            top: "10px",
             left: "50%",
-            transform: "translate(-50%, -50%)",
             zIndex: 1000,
           }}
         >

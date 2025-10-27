@@ -5,9 +5,19 @@ export interface TidePrediction {
   depth_m?: number; // Water depth in meters (optional, not present for land)
 }
 
+// Tide extreme (high or low tide)
+export interface TideExtreme {
+  time: string; // ISO 8601 datetime string
+  depth_m: number; // Water depth in meters
+}
+
 // API response for tide predictions
 export interface TidePredictionsResponse {
   predictions: TidePrediction[];
+  extrema?: {
+    highs: TideExtreme[];
+    lows: TideExtreme[];
+  };
   source: string;
   location: {
     lat: number;
