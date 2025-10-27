@@ -38,6 +38,9 @@ jobs:
         env:
           FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
 
+      - name: Run tests
+        run: npm run test:run
+
       - name: Build
         run: npm run build
         env:
