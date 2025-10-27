@@ -21,7 +21,7 @@ export async function fetchTidePredictions(
   lon: number,
   start: Date,
   end: Date,
-  interval: string = "30m",
+  interval: string = "10m",
   source: string = "fes",
 ): Promise<TidePredictionsResponse> {
   const params = new URLSearchParams({

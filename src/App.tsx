@@ -14,7 +14,7 @@ import { useDebounce } from "./hooks/useDebounce";
 import { useUrlState } from "./hooks/useUrlState";
 import { useGeocodingCache } from "./hooks/useGeocodingCache";
 import { fetchTidePredictions } from "./services/tidesApi";
-import type { MapPosition, TidePrediction } from "./types";
+import type { MapPosition, TidePrediction, TideExtreme } from "./types";
 
 // Default map position (Tokyo Bay area)
 const DEFAULT_POSITION: MapPosition = {
@@ -61,6 +61,8 @@ function App() {
   const [loadPosition, setLoadPosition] = useState(mapPosition);
 
   const [predictions, setPredictions] = useState<TidePrediction[]>([]);
+  const [highs, setHighs] = useState<TideExtreme[]>([]);
+  const [lows, setLows] = useState<TideExtreme[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState<string>("Loading...");
@@ -208,8 +210,13 @@ function App() {
           "fes",
         );
 
+        console.info(response);
         console.log("Received predictions:", response.predictions.length);
+        console.log("Received highs:", response.extrema?.highs?.length ?? 0);
+        console.log("Received lows:", response.extrema?.lows?.length ?? 0);
         setPredictions(response.predictions);
+        setHighs(response.extrema?.highs || []);
+        setLows(response.extrema?.lows || []);
       } catch (err) {
         console.error("Error fetching tide predictions:", err);
         setError(
@@ -272,6 +279,8 @@ function App() {
         <TideOverlay onSizeChange={setPanelSize}>
           <TideGraph
             predictions={predictions}
+            highs={highs}
+            lows={lows}
             loading={loading}
             error={error}
             onDateChange={setSelectedDate}
