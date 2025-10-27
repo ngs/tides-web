@@ -18,7 +18,14 @@ import {
   addDays,
   subDays,
 } from "date-fns";
-import { Box, Typography, IconButton, Stack, useTheme } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Stack,
+  useTheme,
+  CircularProgress,
+} from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSunrise, faSunset } from "@fortawesome/pro-regular-svg-icons";
@@ -243,8 +250,16 @@ export function TideGraph({
 
   if (loading) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography>Loading tide data...</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          width: "100%",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
       </Box>
     );
   }
@@ -430,7 +445,6 @@ export function TideGraph({
             <LineChart
               data={chartData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              isAnimationActive={false}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -528,6 +542,7 @@ export function TideGraph({
                 dataKey="depth"
                 stroke="#00bcd4"
                 strokeWidth={3}
+                isAnimationActive={false}
                 dot={({ cx, cy, payload }) => {
                   const { time, isHigh, isLow } = payload;
 

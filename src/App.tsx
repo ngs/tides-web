@@ -23,6 +23,8 @@ const DEFAULT_POSITION: MapPosition = {
   zoom: 10,
 };
 
+const LOADING_LOCATION_NAME = "Loading...";
+
 // Serialization/deserialization for URL state
 const mapPositionUrlOptions = {
   defaultValue: DEFAULT_POSITION,
@@ -65,7 +67,9 @@ function App() {
   const [lows, setLows] = useState<TideExtreme[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locationName, setLocationName] = useState<string>("Loading...");
+  const [locationName, setLocationName] = useState<string>(
+    LOADING_LOCATION_NAME,
+  );
   const [panelSize, setPanelSize] = useState<number>(400); // Default desktop width or mobile height vh
 
   const geocodingCache = useGeocodingCache();
@@ -73,6 +77,7 @@ function App() {
   const handlePositionChange = (position: MapPosition, immediate?: boolean) => {
     setMapPosition(position);
     if (immediate) {
+      setLocationName(LOADING_LOCATION_NAME);
       setLoadPosition(position);
     }
   };

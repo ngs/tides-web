@@ -66,3 +66,28 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Google Maps map type control button styling */
+/* Reset all button borders first */
+.gm-style button {
+  border-radius: 0 !important;
+}
+
+/* Style for horizontal bar map type control */
+.gm-style .gm-style-mtc button {
+  border-radius: 0 !important;
+}
+
+/* First button (left side) */
+.gm-style .gm-style-mtc > div:first-child button,
+.gm-style .gm-style-mtc button:first-child {
+  border-top-left-radius: 2px !important;
+  border-bottom-left-radius: 2px !important;
+}
+
+/* Last button (right side) */
+.gm-style .gm-style-mtc > div:last-child button,
+.gm-style .gm-style-mtc button:last-child {
+  border-top-right-radius: 2px !important;
+  border-bottom-right-radius: 2px !important;
+}
