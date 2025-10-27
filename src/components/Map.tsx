@@ -66,6 +66,7 @@ export function Map({ position, onPositionChange }: MapProps) {
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: position.lat, lng: position.lon },
           zoom: position.zoom,
+          cameraControl: false,
           mapTypeControl: true,
           mapTypeControlOptions: {
             style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
@@ -74,6 +75,9 @@ export function Map({ position, onPositionChange }: MapProps) {
           streetViewControl: false,
           fullscreenControl: false,
           zoomControl: true,
+          zoomControlOptions: {
+            position: google.maps.ControlPosition.RIGHT_TOP,
+          },
           mapId: "TIDES_MAP", // Required for AdvancedMarkerElement
         });
 
@@ -214,7 +218,7 @@ export function Map({ position, onPositionChange }: MapProps) {
           }
         });
 
-        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(
+        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(
           locationButton,
         );
       } catch (error: unknown) {

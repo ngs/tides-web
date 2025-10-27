@@ -41,6 +41,7 @@ interface TideGraphProps {
   error?: string | null;
   onDateChange?: (date: Date) => void;
   position: MapPosition;
+  panelSize: number;
   locationName: string;
 }
 
@@ -53,6 +54,7 @@ export function TideGraph({
   onDateChange,
   position,
   locationName,
+  panelSize,
 }: TideGraphProps) {
   const theme = useTheme();
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -313,7 +315,10 @@ export function TideGraph({
             alignItems: { xs: "flex-start", md: "center" },
           }}
         >
-          <Typography variant="h6" sx={{ flexShrink: 0 }}>
+          <Typography
+            variant="h6"
+            sx={{ flexShrink: 0, fontSize: { xs: "1em", md: "1.2em" } }}
+          >
             {locationName}
           </Typography>
           <MoonPhase
@@ -356,7 +361,7 @@ export function TideGraph({
         <Box
           sx={{
             width: "100%",
-            padding: "0px 28px 0 78px",
+            padding: "0px 28px 0 38px",
             flexShrink: 0,
           }}
         >
@@ -444,7 +449,7 @@ export function TideGraph({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -493,19 +498,11 @@ export function TideGraph({
               />
               <YAxis
                 domain={[minDepth, maxDepth]}
-                label={{
-                  value: "Depth (m)",
-                  angle: -90,
-                  position: "insideLeft",
-                  style: {
-                    fill: theme.palette.text.secondary,
-                    fontSize: "0.875rem",
-                  },
-                }}
                 stroke={theme.palette.text.secondary}
                 style={{
                   fontSize: "0.75rem",
                 }}
+                width={40}
               />
               <Tooltip
                 contentStyle={{
@@ -564,6 +561,14 @@ export function TideGraph({
 
                   // Check if this is a high tide
                   if (isHigh) {
+                    // Check if near sunrise or sunset to adjust label position
+                    const nearSunrise =
+                      Math.abs(time - sunTimes.sunrise) < 3600000; // Within 1 hour
+                    const nearSunset =
+                      Math.abs(time - sunTimes.sunset) < 3600000;
+                    const labelY =
+                      nearSunrise || nearSunset ? cy - 25 : cy - 10;
+
                     return (
                       <g key={time}>
                         <circle
@@ -576,7 +581,7 @@ export function TideGraph({
                         />
                         <text
                           x={cx}
-                          y={cy - 10}
+                          y={labelY}
                           textAnchor="middle"
                           fill={theme.palette.info.main}
                           fontSize={11}
@@ -590,6 +595,14 @@ export function TideGraph({
 
                   // Check if this is a low tide
                   if (isLow) {
+                    // Check if near sunrise or sunset to adjust label position
+                    const nearSunrise =
+                      Math.abs(time - sunTimes.sunrise) < 3600000; // Within 1 hour
+                    const nearSunset =
+                      Math.abs(time - sunTimes.sunset) < 3600000;
+                    const labelY =
+                      nearSunrise || nearSunset ? cy + 30 : cy + 20;
+
                     return (
                       <g key={time}>
                         <circle
@@ -602,7 +615,7 @@ export function TideGraph({
                         />
                         <text
                           x={cx}
-                          y={cy + 20}
+                          y={labelY}
                           textAnchor="middle"
                           fill={theme.palette.warning.main}
                           fontSize={11}
@@ -649,7 +662,10 @@ export function TideGraph({
         sx={{
           flexShrink: 0,
           mt: 1,
-          display: "flex",
+          display: {
+            md: "flex",
+            xs: panelSize < 50 ? "none" : "flex",
+          },
           gap: 1,
           flexDirection: "row",
         }}

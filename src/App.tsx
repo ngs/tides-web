@@ -57,6 +57,36 @@ function App() {
     },
   });
 
+  // Prevent overscroll bounce effect on mobile Safari
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    const preventDefaultScroll = (e: TouchEvent) => {
+      // Only prevent default on document body level scrolling
+      const target = e.target as HTMLElement;
+      if (target === document.body || target === document.documentElement) {
+        e.preventDefault();
+      }
+    };
+
+    // Prevent pinch zoom
+    document.addEventListener("touchmove", preventDefault, { passive: false });
+
+    // Prevent overscroll at document level
+    document.addEventListener("touchstart", preventDefaultScroll, {
+      passive: false,
+    });
+
+    return () => {
+      document.removeEventListener("touchmove", preventDefault);
+      document.removeEventListener("touchstart", preventDefaultScroll);
+    };
+  }, []);
+
   const [mapPosition, setMapPosition] = useUrlState(mapPositionUrlOptions);
   const debouncedPosition = useDebounce(mapPosition, 500);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -255,6 +285,10 @@ function App() {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          overscrollBehavior: "none",
+          position: "fixed",
+          top: 0,
+          left: 0,
         }}
       >
         {/* Map container */}
@@ -288,6 +322,7 @@ function App() {
             lows={lows}
             loading={loading}
             error={error}
+            panelSize={panelSize}
             onDateChange={setSelectedDate}
             position={debouncedPosition}
             locationName={locationName}
